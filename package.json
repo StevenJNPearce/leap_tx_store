@@ -1,9 +1,7 @@
 {
    "name": "leap_tx_store",
    "version": "0.0.1",
-   "description": "Awesome project developed with TypeORM.",
    "devDependencies": {
-      "@types/express": "^4.16.1",
       "@types/node": "^11.9.5",
       "ts-node": "^8.0.2",
       "tslint": "^5.12.1",
@@ -14,12 +12,7 @@
    "dependencies": {
       "@types/web3": "^1.0.18",
       "aws-sdk": "^2.409.0",
-      "body-parser": "^1.18.1",
-      "express": "^4.15.4",
       "leap-core": "^0.28.0",
-      "reflect-metadata": "^0.1.10",
-      "sqlite3": "^4.0.3",
-      "typeorm": "0.2.13",
       "web3": "^1.0.0-beta.33"
    },
    "main": "src/index.js",
