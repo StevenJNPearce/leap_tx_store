@@ -1,97 +1,36 @@
 const Web3 = require('web3');
-import * as bodyParser from 'body-parser';
-import * as express from 'express';
-import { helpers, LeapTransaction, Tx, TxJSON } from 'leap-core';
-import 'reflect-metadata';
-import { createConnection } from 'typeorm';
-import { Block } from 'web3/eth/types';
-import { eTransaction } from './entity/eTransaction';
-import { Routes } from './routes';
+import * as AWS from 'aws-sdk';
+import { helpers } from 'leap-core';
 
-const config = require('../config.json');
+import Db from './db';
+import LeapTxService from './service';
 
-type PlasmaTransaction = LeapTransaction & TxJSON;
+const simpleDB = new AWS.SimpleDB();
 
-type PlasmaBlock = Block & {
-  transactions: PlasmaTransaction[];
-} & TxJSON;
+type Event = { context: any, from: string, to: string, color: string };
+export const handler = (event: Event, context: any, callback: Function) => {
+  context.callbackWaitsForEmptyEventLoop = false; // eslint-disable-line no-param-reassign
+  try {
+    const { from, to, color } = event;
+    const path = (event.context || {})['resource-path'] || '';
+    const db = new Db(simpleDB, process.env.TABLE_NAME);
+    const web3 = helpers.extendWeb3(new Web3(process.env.LEAP_NODE));
+    const txService = new LeapTxService(db, web3);
 
-createConnection()
-  .then(async connection => {
-    // create express app
-    const app = express();
-    app.use(bodyParser.json());
+    if (path) {
+      const routes = {
+        'from': () => txService.getTransactions({ from }),
+        'to': () => txService.getTransactions({ to }),
+        'color': () => txService.getTransactions({ color: Number(color) }),
+      };
 
-    // register express routes from defined application routes
-    Routes.forEach(route => {
-      app[route.method](
-        route.route,
-        (req: express.Request, res: express.Response, next: Function) => {
-          const result = new route.controller()[route.action](req, res, next);
-          if (result instanceof Promise) {
-            result.then(result =>
-              result !== null && result !== undefined
-                ? res.send(result)
-                : undefined
-            );
-          } else if (result !== null && result !== undefined) {
-            res.json(result);
-          }
-        }
-      );
-    });
-
-    // start express server
-    app.listen(3000);
-
-    // setup web3
-    const web3 = helpers.extendWeb3(new Web3(config.leapNode));
-
-    const getdbTip = async () => {
-      const res = await connection
-        .createQueryBuilder()
-        .select('MAX(blockNumber)')
-        .from(eTransaction, 'tx')
-        .execute();
-      return Object.values<number>(res[0])[0] === null
-        ? 0
-        : Object.values<number>(res[0])[0];
-    };
-
-    let lock = false;
-    async function getTransactions() {
-      if (lock) {
-        return;
+      if (routes[path]) {
+        routes[path]();
       }
-      lock = true;
-      try {
-        const fromBlock = await getdbTip();
-        const toBlock = await web3.eth.getBlockNumber();
-        for (let i = fromBlock; i <= toBlock; i++) {
-          const block = await web3.eth.getBlock(i, true);
-          block.transactions.forEach(async tx => {
-            const plasmaTx = {
-              ...tx,
-              ...Tx.fromRaw((tx as any).raw).toJSON()
-            } as PlasmaTransaction;
-            console.log(plasmaTx);
-            await connection.manager.save(
-              connection.manager.create(eTransaction, {
-                hash: plasmaTx.hash,
-                from: plasmaTx.from.toLowerCase(),
-                to: plasmaTx.to.toLowerCase(),
-                color: plasmaTx.color,
-                blockNumber: plasmaTx.blockNumber
-              })
-            );
-          });
-        }
-      } catch (e) {
-        console.log(e);
-      } finally {
-        lock = false;
-      }
+    } else {
+      txService.updateTransactions();
     }
-    setInterval(getTransactions, 15000);
-  })
-  .catch(error => console.log(error));
+  } catch (err) {
+    callback(err);
+  }
+};
