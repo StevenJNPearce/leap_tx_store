@@ -25,7 +25,7 @@ function getBlock(web3, blockNumber, includeTransactions) {
 export default class LeapTxService {
   constructor(db, web3) {
     this.db = db;
-    this.web = web3;
+    this.web3 = web3;
   }
 
   updateTransactions() {
