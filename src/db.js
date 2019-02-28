@@ -48,36 +48,51 @@ export default class Db {
       ItemName: tx.hash,
       Attributes: [
         { Name: 'hash', Value: tx.hash, Replace: true },
-        { Name: 'from', Value: tx.from, Replace: true },
-        { Name: 'color', Value: String(tx.color), Replace: true },
-        { Name: 'to', Value: tx.to, Replace: true },
-        { Name: 'blockNumber', Value: String(tx.blockNumber), Replace: true },
+        {
+          Name: 'from',
+          Value: String(tx.from || '').toLowerCase(),
+          Replace: true
+        },
+        { Name: 'color', Value: String(tx.color || 0), Replace: true },
+        { Name: 'to', Value: String(tx.to || '').toLowerCase(), Replace: true },
+        {
+          Name: 'blockNumber',
+          Value: String(tx.blockNumber).padStart(10, '0'), // Need for sorting, simpledb compares values lexicographically
+          Replace: true
+        },
         { Name: 'json', Value: JSON.stringify(tx), Replace: true }
       ]
     });
   }
 
   getTransactions({ from, to, color }) {
+    const addrConditions = [
+      from !== undefined && `\`from\` = "${from.toLowerCase()}"`,
+      to !== undefined && `\`to\` = "${to.toLowerCase()}"`
+    ]
+      .filter(a => a)
+      .join(' or ');
     const conditions = [
-      from && `\`from\` = "${from}"`,
-      to && `\`to\` = "${to}"`,
-      color && `\`color\` = "${color}"`
+      addrConditions && `(${addrConditions})`,
+      color !== undefined && `\`color\` = "${color}"`,
+      `\`blockNumber\` is not null`
     ]
       .filter(a => a)
       .join(' and ');
     const SelectExpression = `
       select \`json\` from \`${this.sdbTableName}\`
-      where ${conditions}
+      where ${conditions} order by \`blockNumber\` desc limit 100
     `.trim();
+    console.log(SelectExpression);
 
     return this.select({
       SelectExpression
     })
       .then(data => {
         return {
-          transactions: data.Items.map(i => transform(i.Attributes)).map(rec =>
-            JSON.parse(rec.json)
-          ),
+          transactions: (data.Items || [])
+            .map(i => transform(i.Attributes))
+            .map(rec => JSON.parse(rec.json)),
           NextToken: data.NextToken
         };
       })
@@ -88,16 +103,16 @@ export default class Db {
 
   getLatestBlockNumber() {
     return this.select({
-      SelectExpression: `select \`blockNumber\` from \`${
+      SelectExpression: `select * from \`${
         this.sdbTableName
-      }\` order by \`blockNumber\` desc limit 1`
+      }\` where \`blockNumber\` is not null order by \`blockNumber\` DESC limit 1`
     })
       .then(data => {
-        if (data.Items.length === 0) {
+        if (!data.Items || data.Items.length === 0) {
           return 0;
         }
 
-        return transform(data.Items[0]).blockNumber;
+        return Number(transform(data.Items[0].Attributes).blockNumber);
       })
       .catch(err => {
         throw new Error(`Error: ${err}`);
@@ -105,22 +120,22 @@ export default class Db {
   }
 
   putAttributes(params) {
-    return promiseCall(this.sdb.putAttributes, params);
+    return promiseCall(this.sdb.putAttributes.bind(this.sdb), params);
   }
 
   select(params) {
-    return promiseCall(this.sdb.select, params);
+    return promiseCall(this.sdb.select.bind(this.sdb), params);
   }
 
   getAttributes(params) {
-    return promiseCall(this.sdb.getAttributes, params);
+    return promiseCall(this.sdb.getAttributes.bind(this.sdb), params);
   }
 
   deleteAttributes(params) {
-    return promiseCall(this.sdb.deleteAttributes, params);
+    return promiseCall(this.sdb.deleteAttributes.bind(this.sdb), params);
   }
 
   createDomain(params) {
-    return promiseCall(this.sdb.createDomain, params);
+    return promiseCall(this.sdb.createDomain.bind(this.sdb), params);
   }
 }

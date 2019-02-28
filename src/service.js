@@ -32,9 +32,10 @@ export default class LeapTxService {
     return Promise.all([
       this.db.getLatestBlockNumber(),
       getBlockNumber(this.web3)
-    ]).then(([fromBlock, toBlock]) => {
+    ]).then(([fromBlock, latestBlock]) => {
+      const toBlock = Math.min(fromBlock + 4000, latestBlock);
       const blockPromises = [];
-      for (let i = fromBlock; i <= toBlock; i++) {
+      for (let i = fromBlock; i <= toBlock; i += 1) {
         blockPromises.push(
           getBlock(this.web3, i, true).then(block => {
             return Promise.all(
