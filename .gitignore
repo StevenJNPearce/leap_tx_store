@@ -1,7 +1,3 @@
-.idea/
-.vscode/
 node_modules/
 build/
-tmp/
-temp/
-db.sqlite
+lambda.zip

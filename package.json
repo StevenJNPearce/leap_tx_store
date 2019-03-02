@@ -1,27 +1,24 @@
 {
-   "name": "leap_tx_store",
-   "version": "0.0.1",
-   "description": "Awesome project developed with TypeORM.",
-   "devDependencies": {
-      "@types/express": "^4.16.1",
-      "@types/node": "^10.9.0",
-      "ts-node": "^8.0.2",
-      "tslint": "^5.12.1",
-      "tslint-config-prettier": "^1.18.0",
-      "tslint-config-standard": "^8.0.1",
-      "typescript": "^3.3.3"
-   },
-   "dependencies": {
-      "@types/web3": "^1.0.18",
-      "body-parser": "^1.18.1",
-      "express": "^4.15.4",
-      "leap-core": "^0.28.0",
-      "reflect-metadata": "^0.1.10",
-      "sqlite3": "^4.0.3",
-      "typeorm": "0.2.13",
-      "web3": "^1.0.0-beta.33"
-   },
-   "scripts": {
-      "start": "ts-node src/index.ts"
-   }
+  "name": "leap_tx_store",
+  "version": "0.0.1",
+  "devDependencies": {
+    "@babel/node": "^7.2.2",
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.3.4",
+    "@babel/preset-env": "^7.3.4",
+    "aws-sdk": "^2.409.0"
+  },
+  "dependencies": {
+    "leap-core": "^0.28.0",
+    "web3": "0.20"
+  },
+  "main": "index.js",
+  "scripts": {
+    "package": "yarn build && yarn package:pack",
+    "package:pack": "cd build && zip -r ../lambda.zip * && cd ..",
+    "build": "yarn build:init && yarn build:js && yarn build:install",
+    "build:init": "rm -rf build && mkdir -p build/src",
+    "build:js": "babel src --out-dir build",
+    "build:install": "cp package.json yarn.lock build/ && cd build && yarn --production"
+  }
 }
