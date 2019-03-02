@@ -10,7 +10,7 @@ const simpleDB = new AWS.SimpleDB();
 export const handler = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false; // eslint-disable-line no-param-reassign
   try {
-    const { from, to, color } = event;
+    const { from, to, color, nextToken } = event;
     const path = (event.context || {})['resource-path'] || '';
     const db = new Db(simpleDB, process.env.TABLE_NAME);
     const web3 = helpers.extendWeb3(
@@ -19,10 +19,10 @@ export const handler = (event, context, callback) => {
     const txService = new LeapTxService(db, web3);
 
     if (path) {
+      console.log('routes', path);
       const routes = {
-        from: () => txService.getTransactions({ from }),
-        to: () => txService.getTransactions({ to }),
-        color: () => txService.getTransactions({ color: Number(color) })
+        '/transactions': () =>
+          txService.getTransactions({ from, to, color }, nextToken)
       };
 
       if (routes[path]) {
@@ -31,9 +31,14 @@ export const handler = (event, context, callback) => {
         });
       }
     } else {
-      txService.updateTransactions().then(result => {
-        callback(null, result);
-      });
+      console.log('updateTransactions', process.env.BATCH_SIZE);
+      txService
+        .updateTransactions(
+          process.env.BATCH_SIZE && Number(process.env.BATCH_SIZE)
+        )
+        .then(result => {
+          callback(null, result);
+        });
     }
   } catch (err) {
     callback(err);

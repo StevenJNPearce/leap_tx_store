@@ -1,24 +1,24 @@
 {
-   "name": "leap_tx_store",
-   "version": "0.0.1",
-   "devDependencies": {
-      "@babel/cli": "^7.2.3",
-      "@babel/core": "^7.3.4",
-      "@babel/preset-env": "^7.3.4"
-   },
-   "dependencies": {
-      "aws-sdk": "^2.409.0",
-      "leap-core": "^0.28.0",
-      "web3": "0.20"
-   },
-   "main": "src/index.js",
-   "scripts": {
-      "package": "yarn build && yarn package:pack",
-      "package:pack": "cd build && zip -r ../lambda.zip * && cd ..",
-      "start": "ts-node src/index.ts",
-      "build": "yarn build:init && yarn build:js && yarn build:install",
-      "build:init": "rm -rf build && mkdir -p build/src",
-      "build:js": "babel src --out-dir build/src",
-      "build:install": "cp package.json yarn.lock build/ && cd build && yarn --production"
-   }
+  "name": "leap_tx_store",
+  "version": "0.0.1",
+  "devDependencies": {
+    "@babel/node": "^7.2.2",
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.3.4",
+    "@babel/preset-env": "^7.3.4",
+    "aws-sdk": "^2.409.0"
+  },
+  "dependencies": {
+    "leap-core": "^0.28.0",
+    "web3": "0.20"
+  },
+  "main": "index.js",
+  "scripts": {
+    "package": "yarn build && yarn package:pack",
+    "package:pack": "cd build && zip -r ../lambda.zip * && cd ..",
+    "build": "yarn build:init && yarn build:js && yarn build:install",
+    "build:init": "rm -rf build && mkdir -p build/src",
+    "build:js": "babel src --out-dir build",
+    "build:install": "cp package.json yarn.lock build/ && cd build && yarn --production"
+  }
 }

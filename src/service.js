@@ -28,12 +28,13 @@ export default class LeapTxService {
     this.web3 = web3;
   }
 
-  updateTransactions() {
+  updateTransactions(batchSize = 1000) {
     return Promise.all([
       this.db.getLatestBlockNumber(),
       getBlockNumber(this.web3)
     ]).then(([fromBlock, latestBlock]) => {
-      const toBlock = Math.min(fromBlock + 4000, latestBlock);
+      const toBlock = Math.min(fromBlock + batchSize, latestBlock);
+      console.log('from %d to %d', fromBlock, toBlock);
       const blockPromises = [];
       for (let i = fromBlock; i <= toBlock; i += 1) {
         blockPromises.push(
@@ -49,7 +50,7 @@ export default class LeapTxService {
     });
   }
 
-  getTransactions(params) {
-    return this.db.getTransactions(params);
+  getTransactions(params, nextToken) {
+    return this.db.getTransactions(params, nextToken);
   }
 }

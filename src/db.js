@@ -65,16 +65,16 @@ export default class Db {
     });
   }
 
-  getTransactions({ from, to, color }) {
+  getTransactions({ from, to, color }, nextToken) {
     const addrConditions = [
-      from !== undefined && `\`from\` = "${from.toLowerCase()}"`,
-      to !== undefined && `\`to\` = "${to.toLowerCase()}"`
+      from && `\`from\` = "${from.toLowerCase()}"`,
+      to && `\`to\` = "${to.toLowerCase()}"`
     ]
       .filter(a => a)
       .join(' or ');
     const conditions = [
       addrConditions && `(${addrConditions})`,
-      color !== undefined && `\`color\` = "${color}"`,
+      color && `\`color\` = "${color}"`,
       `\`blockNumber\` is not null`
     ]
       .filter(a => a)
@@ -83,10 +83,10 @@ export default class Db {
       select \`json\` from \`${this.sdbTableName}\`
       where ${conditions} order by \`blockNumber\` desc limit 100
     `.trim();
-    console.log(SelectExpression);
 
     return this.select({
-      SelectExpression
+      SelectExpression,
+      NextToken: nextToken
     })
       .then(data => {
         return {
